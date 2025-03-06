@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The United Foundation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        .neo-brutalist {
+            border: 3px solid #000;
+            box-shadow: 4px 4px 0 #000;
+        }
+        .neo-brutalist-sm {
+            border: 2px solid #000;
+            box-shadow: 2px 2px 0 #000;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        .loading {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #4d12a5;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white neo-brutalist mb-8">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <img src="https://firebasestorage.googleapis.com/v0/b/widecanvas-d0dd4.appspot.com/o/logos%2Ftuf%20logo-min%20(1).png?alt=media&token=f25047db-e54f-4857-b4c8-14883ae153df" alt="Logo" class="h-12">
+                <div class="hidden md:flex space-x-4">
+                    <button onclick="showSection('home')" class="neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white hover:bg-[#325ec3]">Home</button>
+                    <button onclick="showSection('donate')" class="neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white hover:bg-[#325ec3]">Donate</button>
+                    <button onclick="showSection('volunteer')" class="neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white hover:bg-[#325ec3]">Volunteer</button>
+                    <button onclick="showSection('scanner')" class="neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white hover:bg-[#325ec3]">QR Scanner</button>
+                    <button onclick="toggleTheme()" class="neo-brutalist-sm px-4 py-2 bg-gray-200"><i class="bi bi-moon-fill"></i></button>
+                    <button onclick="showSection('profile')" class="neo-brutalist-sm px-4 py-2 bg-gray-200"><i class="bi bi-person-fill"></i></button>
+                </div>
+                <button class="md:hidden neo-brutalist-sm px-3 py-2" onclick="toggleMobileMenu()">
+                    <i class="bi bi-list text-2xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="hidden md:hidden bg-white neo-brutalist mx-4 mb-4">
+        <div class="flex flex-col p-4 space-y-3">
+            <button onclick="showSection('home')" class="neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white">Home</button>
+            <button onclick="showSection('donate')" class="neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white">Donate</button>
+            <button onclick="showSection('volunteer')" class="neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white">Volunteer</button>
+            <button onclick="showSection('scanner')" class="neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white">QR Scanner</button>
+            <button onclick="toggleTheme()" class="neo-brutalist-sm px-4 py-2 bg-gray-200"><i class="bi bi-moon-fill"></i></button>
+            <button onclick="showSection('profile')" class="neo-brutalist-sm px-4 py-2 bg-gray-200"><i class="bi bi-person-fill"></i></button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4">
+        <!-- Home Section -->
+        <section id="home" class="fade-in">
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="neo-brutalist p-6 bg-white">
+                    <h2 class="text-2xl font-bold mb-4">Live Donation Statistics</h2>
+                    <canvas id="donationChart" class="w-full"></canvas>
+                    <div class="mt-4 grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-[#4d12a5]">₹1,24,500</p>
+                            <p class="text-gray-600">Total Donations</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-[#325ec3]">256</p>
+                            <p class="text-gray-600">Total Donors</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="neo-brutalist p-6 bg-white">
+                    <h2 class="text-2xl font-bold mb-4">Recent Donations</h2>
+                    <div class="space-y-4" id="donationFeed">
+                        <div class="neo-brutalist-sm p-3 bg-gray-50">
+                            <p class="font-semibold">Anonymous Donor</p>
+                            <p class="text-gray-600">Donated ₹5,000</p>
+                            <p class="text-sm text-gray-500">2 minutes ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Donate Section -->
+        <section id="donate" class="hidden fade-in">
+            <div class="max-w-2xl mx-auto neo-brutalist p-6 bg-white">
+                <h2 class="text-2xl font-bold mb-4">Make a Donation</h2>
+                <form id="donationForm" class="space-y-4">
+                    <div>
+                        <label class="block mb-2">Amount (₹)</label>
+                        <input type="number" class="w-full p-2 neo-brutalist-sm" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Payment Method</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button type="button" class="neo-brutalist-sm p-3 bg-gray-50 hover:bg-gray-100">
+                                <i class="bi bi-credit-card mr-2"></i>Card
+                            </button>
+                            <button type="button" class="neo-brutalist-sm p-3 bg-gray-50 hover:bg-gray-100">
+                                <i class="bi bi-wallet2 mr-2"></i>UPI
+                            </button>
+                        </div>
+                    </div>
+                    <div id="card-element" class="neo-brutalist-sm p-3"></div>
+                    <button type="submit" class="w-full neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white hover:bg-[#325ec3]">
+                        Donate Now
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Volunteer Section -->
+        <section id="volunteer" class="hidden fade-in">
+            <div class="max-w-2xl mx-auto neo-brutalist p-6 bg-white">
+                <h2 class="text-2xl font-bold mb-4">Volunteer Registration</h2>
+                <form id="volunteerForm" class="space-y-4">
+                    <div>
+                        <label class="block mb-2">Full Name</label>
+                        <input type="text" class="w-full p-2 neo-brutalist-sm" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Email</label>
+                        <input type="email" class="w-full p-2 neo-brutalist-sm" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Phone</label>
+                        <input type="tel" class="w-full p-2 neo-brutalist-sm" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Available Hours per Week</label>
+                        <input type="number" class="w-full p-2 neo-brutalist-sm" required>
+                    </div>
+                    <button type="submit" class="w-full neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white hover:bg-[#325ec3]">
+                        Submit Application
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- QR Scanner Section -->
+        <section id="scanner" class="hidden fade-in">
+            <div class="max-w-2xl mx-auto neo-brutalist p-6 bg-white">
+                <h2 class="text-2xl font-bold mb-4">QR Code Scanner</h2>
+                <div class="aspect-square neo-brutalist-sm bg-gray-100 mb-4">
+                    <video id="qr-video" class="w-full h-full"></video>
+                </div>
+                <button onclick="toggleScanner()" class="w-full neo-brutalist-sm px-4 py-2 bg-[#4d12a5] text-white hover:bg-[#325ec3]">
+                    Start/Stop Scanner
+                </button>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile" class="hidden fade-in">
+            <div class="max-w-2xl mx-auto neo-brutalist p-6 bg-white">
+                <h2 class="text-2xl font-bold mb-4">Profile</h2>
+                <div class="space-y-4">
+                    <div class="neo-brutalist-sm p-4 bg-gray-50">
+                        <h3 class="font-bold">Donation History</h3>
+                        <div id="donationHistory" class="mt-2">
+                            <!-- Donation history will be populated here -->
+                        </div>
+                    </div>
+                    <div class="neo-brutalist-sm p-4 bg-gray-50">
+                        <h3 class="font-bold">Account Settings</h3>
+                        <button onclick="logout()" class="mt-2 neo-brutalist-sm px-4 py-2 bg-red-500 text-white">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Initialize state
+        let currentTheme = 'light';
+        let currentSection = 'home';
+        let qrScanner = null;
+
+        // Initialize Stripe
+        const stripe = Stripe('your_publishable_key');
+        const elements = stripe.elements();
+        const card = elements.create('card');
+        card.mount('#card-element');
+
+        // Initialize donation chart
+        const ctx = document.getElementById('donationChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Donations (₹)',
+                    data: [12000, 19000, 15000, 25000, 22000, 30000],
+                    borderColor: '#4d12a5',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Navigation functions
+        function showSection(section) {
+            document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(section).classList.remove('hidden');
+            currentSection = section;
+            if (section === 'scanner' && !qrScanner) {
+                initializeScanner();
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.classList.toggle('dark');
+            // Update theme-specific styles here
+        }
+
+        // QR Scanner functions
+        function initializeScanner() {
+            const video = document.getElementById('qr-video');
+            qrScanner = new QrScanner(video, result => {
+                handleQrCode(result);
+            });
+        }
+
+        function toggleScanner() {
+            if (qrScanner.hasFlash) {
+                qrScanner._active ? qrScanner.stop() : qrScanner.start();
+            }
+        }
+
+        function handleQrCode(result) {
+            // Handle the QR code result
+            console.log('QR Code detected:', result);
+            // Update the database with the ration delivery status
+        }
+
+        // Form submission handlers
+        document.getElementById('donationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Handle donation payment processing
+            try {
+                // Show loading state
+                const button = e.target.querySelector('button[type="submit"]');
+                button.innerHTML = '<div class="loading mx-auto"></div>';
+                
+                // Process payment with Stripe
+                const {token} = await stripe.createToken(card);
+                
+                // Make API call to process donation
+                const response = await fetch('your_api_endpoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        token: token.id,
+                        amount: e.target.querySelector('input[type="number"]').value
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Donation successful! Thank you for your contribution.');
+                    e.target.reset();
+                }
+            } catch (error) {
+                console.error('Error processing donation:', error);
+                alert('There was an error processing your donation. Please try again.');
+            } finally {
+                button.innerHTML = 'Donate Now';
+            }
+        });
+
+        document.getElementById('volunteerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Handle volunteer registration
+            try {
+                const formData = new FormData(e.target);
+                const button = e.target.querySelector('button[type="submit"]');
+                button.innerHTML = '<div class="loading mx-auto"></div>';
+
+                // Make API call to register volunteer
+                const response = await fetch('your_api_endpoint', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert('Thank you for volunteering! We will contact you soon.');
+                    e.target.reset();
+                }
+            } catch (error) {
+                console.error('Error registering volunteer:', error);
+                alert('There was an error submitting your application. Please try again.');
+            } finally {
+                button.innerHTML = 'Submit Application';
+            }
+        });
+
+        // Simulate live donation feed
+        function updateDonationFeed() {
+            const donations = [
+                {name: 'Anonymous', amount: 5000, time: '2 minutes ago'},
+                {name: 'John D.', amount: 10000, time: '5 minutes ago'},
+                {name: 'Sarah M.', amount: 2500, time: '10 minutes ago'}
+            ];
+
+            const feed = document.getElementById('donationFeed');
+            feed.innerHTML = donations.map(donation => `
+                <div class="neo-brutalist-sm p-3 bg-gray-50">
+                    <p class="font-semibold">${donation.name}</p>
+                    <p class="text-gray-600">Donated ₹${donation.amount}</p>
+                    <p class="text-sm text-gray-500">${donation.time}</p>
+                </div>
+            `).join('');
+        }
+
+        // Initialize
+        updateDonationFeed();
+        setInterval(updateDonationFeed, 30000); // Update every 30 seconds
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
